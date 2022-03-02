@@ -7,8 +7,8 @@ from .joints import Joint
 
 
 class Robot():
-    def __init__(self, *args, vis=True):
-        self.init_structure(args)
+    def __init__(self, structure, vis=True):
+        self.init_structure(structure)
         self.base = np.array([0, 0, 1])
         self.max_length = sum(
             [s.length for s in self.structure if type(s) == Link])
@@ -30,10 +30,10 @@ class Robot():
         fig = plt.figure()
         ax = fig.add_subplot(
             xlim=(-self.max_length - 1, self.max_length + 1), ylim=(-self.max_length - 1, self.max_length + 1))
-        self.robot_plot, = ax.plot([], [], 'o-', lw=1, color='r',
+        self.robot_plot, = ax.plot([], [], 'o-', lw=1, color='b',
                                    markerfacecolor='w', markersize=3)
-        plt.xlabel('x-axis [m]', fontsize=15)
-        plt.ylabel('y-axis [m]', fontsize=15)
+        plt.xlabel('x', fontsize=15)
+        plt.ylabel('y', fontsize=15)
         plt.draw()
 
     def get_joints_in_task_space(self):
@@ -56,8 +56,16 @@ class Robot():
         self.forward_kinematic_transformation = transformations
         return q
 
-    def get_jacobian(self):
-        pass
+    def get_jacobian(self, eps=1e-5):
+        jacobian = []
+        x = self.forward_kinematics()
+        for joint in self.structure:
+            if isinstance(joint, Joint):
+                joint.rotation += eps
+                x_new = self.forward_kinematics()
+                jacobian.append((x - x_new) / eps)
+                joint.rotation -= eps
+        return np.array(jacobian)[:, :-1].T
 
     def forward_kinematics(self):
         self.get_joints_in_task_space()
